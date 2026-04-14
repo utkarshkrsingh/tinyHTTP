@@ -1,10 +1,13 @@
-package main
+package httpcore
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/utkarshkrsingh/tinyHTTP/protocol"
 )
 
 // Request represents a parsed HTTP request
@@ -23,19 +26,11 @@ type BodyData []byte
 var (
 	// bufferSize defines how many bytes are read per socket read operation
 	bufferSize = 1024
-
-	// CRLF is thr standard HTTP line separator ("\r\n")
-	CRLF = "\r\n"
-
-	// DBL_CRLF separates HTTP headers from the body ("\r\n\r\n")
-	DBL_CRLF = "\r\n\r\n"
 )
 
-// handleClient reads data from a TCP connection and parses it into an HTTP request.
+// readRequest read data from a TCP connection and parse it into HTTP requesr.
 // It incrementally reads from the connection because data may arrive in chunks.
-func handleClient(conn net.Conn) {
-	defer conn.Close()
-
+func ReadRequest(conn net.Conn) (*Request, error) {
 	buff := make([]byte, bufferSize)
 	var msg strings.Builder
 
@@ -50,7 +45,7 @@ func handleClient(conn net.Conn) {
 		n, err := conn.Read(buff)
 		if err != nil {
 			log.Printf("error : %v\n", err)
-			return
+			return nil, fmt.Errorf("unable to read: %s", err)
 		}
 
 		// Append the newly read bytes to the accumulated message buffer
@@ -59,7 +54,7 @@ func handleClient(conn net.Conn) {
 
 		// Parse headers once we detect the header-body separated
 		if !headerParsed {
-			parts := strings.SplitN(data, DBL_CRLF, 2)
+			parts := strings.SplitN(data, protocol.DBL_CRLF, 2)
 			if len(parts) < 2 {
 				// Header not fully received yet
 				continue
@@ -81,7 +76,7 @@ func handleClient(conn net.Conn) {
 		}
 
 		// Extract body if headers are already parsed
-		parts := strings.SplitN(data, DBL_CRLF, 2)
+		parts := strings.SplitN(data, protocol.DBL_CRLF, 2)
 		if len(parts) < 2 {
 			continue
 		}
@@ -96,56 +91,5 @@ func handleClient(conn net.Conn) {
 		}
 	}
 
-	// generateResponse sends response back to the client
-	generateResponse(conn, req)
-}
-
-// parseMetaData parses the HTTP request line and headers from the raw text
-func parseMetaData(metaData string) *Request {
-	request := &Request{}
-
-	// Split header into individual lines
-	lines := strings.Split(metaData, CRLF)
-	if len(lines) == 0 {
-		return request
-	}
-
-	// Parse the request line: METHOD PATH VERSION
-	startLine := strings.Fields(lines[0])
-
-	// Ensure the request line have at least 3 components
-	if len(startLine) >= 3 {
-		request.Method = startLine[0]
-		request.Path = startLine[1]
-		request.Version = startLine[2]
-	}
-
-	headers := make(map[string][]string)
-
-	// Parse each header line
-	for _, line := range lines[1:] {
-		line = strings.TrimSpace(line)
-
-		// Skip empty lines
-		if line == "" {
-			continue
-		}
-
-		// Split header into key and value (only at first colon)
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		// Some header can have multiple comma-seperated values
-		values := strings.Split(value, ",")
-
-		headers[key] = values
-	}
-
-	request.Headers = headers
-	return request
+	return req, nil
 }
