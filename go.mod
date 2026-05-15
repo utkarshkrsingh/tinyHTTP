@@ -1,3 +1,3 @@
-module github.com/utkarshkrsingh/tinyHTTP
+module github.com/utkarshkrsingh/tinyhttp
 
 go 1.26.2
