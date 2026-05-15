@@ -21,7 +21,9 @@ func main() {
 	}
 	defer listener.Close()
 
-	h := &handler.SimpleHandler{}
+	router := handler.NewRouter()
+	router.Register("GET", "/", &handler.HomeHandler{})
+	router.Register("GET", "/hello", &handler.HelloHandler{})
 
 	for {
 		conn, err := listener.Accept()
@@ -30,6 +32,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		go server.HandleConnection(conn, h)
+		go server.HandleConnection(conn, router)
 	}
 }
