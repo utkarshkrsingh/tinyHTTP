@@ -32,7 +32,6 @@ TCP Connection → Request Parsing → Router → Handler → Response Writing
 /internal/server → connection handling
 /internal/handler → router and handlers
 /internal/transport → connection utilities
-
 ```
 
 ---
