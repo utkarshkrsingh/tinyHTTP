@@ -1,4 +1,4 @@
-<h2 align="center">TinyHTTP</h2>
+<h1 align="center">TinyHTTP</h1>
 
 A minimal HTTP/1.1 server built from scratch in Go without using the `net/http` package.  
 The project demonstrates how HTTP works over raw TCP connections by manually handling request parsing and response generation.
